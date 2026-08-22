@@ -1,0 +1,67 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Footer from "../../components/Footer.astro";
+import { L, UI, fmtDate, tagLabel, getLang } from "../../lib/i18n";
+import { tags, profile } from "../../lib/db";
+import { loadPosts, getPost } from "../../lib/posts";
+import { postHtml } from "../../lib/html";
+
+const lang = getLang(Astro.cookies);
+const { slug } = Astro.params;
+
+const all = loadPosts();
+const post = getPost(slug!);
+if (!post) {
+  return Astro.redirect("/blog");
+}
+
+const idx = all.findIndex((p) => p.slug === post.slug);
+const next = all[(idx + 1) % all.length];
+const bodyHtml = postHtml(post, lang);
+---
+<BaseLayout title={`${L(post.title, lang)} — Minh Doan`} description={L(post.excerpt, lang)}>
+  <main class="page article-page">
+    <a class="back" href="/blog">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+        <path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor"
+              stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      {L(UI.backAll, lang)}
+    </a>
+
+    <article class="article">
+      <div class="article-meta">
+        <time datetime={post.date}>{fmtDate(post.date, lang)}</time>
+        <span class="dot-sep">·</span>
+        <span class="article-tag">{tagLabel(tags, post.tag, lang)}</span>
+        <span class="dot-sep">·</span>
+        <span>{post.readMins} {L(UI.minRead, lang)}</span>
+      </div>
+      <h1 class="article-title">{L(post.title, lang)}</h1>
+      <p class="article-lede">{L(post.excerpt, lang)}</p>
+
+      <div class="article-body" set:html={bodyHtml}></div>
+
+      <div class="article-foot">
+        <span class="byline">
+          {L(UI.writtenBy, lang)} <strong>{profile.name}</strong>
+        </span>
+      </div>
+    </article>
+
+    {next && next.slug !== post.slug && (
+      <a class="next-up" href={`/blog/${next.slug}`} style="text-decoration:none;color:inherit;">
+        <span class="kicker">{L(UI.nextUp, lang)}</span>
+        <h3 class="next-title">{L(next.title, lang)}</h3>
+        <span class="next-arrow">
+          <svg class="arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                  stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </span>
+      </a>
+    )}
+
+    <Footer />
+  </main>
+</BaseLayout>

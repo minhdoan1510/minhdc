@@ -1,0 +1,38 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Footer from "../components/Footer.astro";
+import BlogSearch from "../components/BlogSearch.tsx";
+import type { SearchPost } from "../components/BlogSearch.tsx";
+import { L, UI, fmtDate, tagLabel, getLang } from "../lib/i18n";
+import { tags } from "../lib/db";
+import { loadPosts } from "../lib/posts";
+
+const lang = getLang(Astro.cookies);
+
+const searchPosts: SearchPost[] = loadPosts().map((p) => ({
+  slug: p.slug,
+  date: p.date,
+  dateFmt: fmtDate(p.date, lang),
+  tag: p.tag,
+  tagLabel: tagLabel(tags, p.tag, lang),
+  title: L(p.title, lang),
+  excerpt: L(p.excerpt, lang),
+  readMins: p.readMins,
+}));
+
+const tagOpts = tags.map((t) => ({ id: t.id, label: L(t, lang) }));
+
+const strings = {
+  title: L(UI.blog, lang),
+  search: L(UI.search, lang),
+  filterAll: L(UI.filterAll, lang),
+  noResults: L(UI.noResults, lang),
+  minRead: L(UI.minRead, lang),
+};
+---
+<BaseLayout title={`${L(UI.blog, lang)} — Minh Doan`}>
+  <main class="page">
+    <BlogSearch client:load posts={searchPosts} tags={tagOpts} strings={strings} />
+    <Footer />
+  </main>
+</BaseLayout>

@@ -1,0 +1,26 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# database (file-based SQLite)
+data/*.db
+data/*.db-*
+
+# uploaded images
+public/uploads/*
+!public/uploads/.gitkeep
+
+# env / secrets
+.env
+.env.local
+
+# os / editor
+.DS_Store
+*.log
+
+# the design handoff source (kept locally for reference only)
+_src/
+profile web-handoff.zip

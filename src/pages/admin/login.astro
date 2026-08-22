@@ -1,0 +1,41 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { checkPassword, sessionToken, SESSION_COOKIE, isAuthed } from "../../lib/auth";
+
+// Already signed in → go straight to admin.
+if (isAuthed(Astro.cookies)) {
+  return Astro.redirect("/admin");
+}
+
+let error = "";
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const pw = (form.get("password") || "").toString();
+  if (checkPassword(pw)) {
+    Astro.cookies.set(SESSION_COOKIE, sessionToken(), {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return Astro.redirect("/admin");
+  }
+  error = "Mật khẩu không đúng.";
+}
+---
+<BaseLayout title="Đăng nhập quản trị">
+  <main class="page">
+    <div class="login-wrap">
+      <span class="kicker">Quản trị</span>
+      <h1 class="page-title" style="margin:8px 0 28px;">Đăng nhập</h1>
+      {error && <p class="login-err">{error}</p>}
+      <form method="POST">
+        <label class="field">
+          <span>Mật khẩu</span>
+          <input type="password" name="password" autocomplete="current-password" autofocus required />
+        </label>
+        <button class="btn-solid" type="submit">Đăng nhập</button>
+      </form>
+    </div>
+  </main>
+</BaseLayout>

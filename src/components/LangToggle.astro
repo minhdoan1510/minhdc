@@ -1,0 +1,30 @@
+---
+// VI / EN switch. Language is a server-read cookie (blog.lang), so switching
+// sets the cookie and reloads for a fresh server render. Idiomatic for SSR;
+// keeps content server-rendered for SEO.
+import { getLang } from "../lib/i18n";
+const lang = getLang(Astro.cookies);
+---
+<div class="lang-toggle" role="group" aria-label="Language">
+  <button class={"lang-opt" + (lang === "vi" ? " is-on" : "")} data-lang="vi" type="button">VI</button>
+  <span class="lang-sep">/</span>
+  <button class={"lang-opt" + (lang === "en" ? " is-on" : "")} data-lang="en" type="button">EN</button>
+</div>
+
+<script is:inline>
+  (function () {
+    function bind() {
+      document.querySelectorAll(".lang-toggle [data-lang]").forEach(function (b) {
+        if (b.dataset.bound) return;
+        b.dataset.bound = "1";
+        b.addEventListener("click", function () {
+          const l = b.getAttribute("data-lang");
+          document.cookie = "blog.lang=" + l + ";path=/;max-age=31536000;samesite=lax";
+          location.reload();
+        });
+      });
+    }
+    bind();
+    document.addEventListener("astro:after-swap", bind);
+  })();
+</script>

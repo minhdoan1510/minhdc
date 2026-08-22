@@ -1,0 +1,50 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PostRow from "../components/PostRow.astro";
+import Footer from "../components/Footer.astro";
+import Newsletter from "../components/Newsletter.tsx";
+import { L, UI, getLang } from "../lib/i18n";
+import { profile } from "../lib/db";
+import { loadPosts } from "../lib/posts";
+
+const lang = getLang(Astro.cookies);
+const recent = loadPosts().slice(0, 4);
+const tagline = L(profile.bio, lang);
+
+const newsletterStrings = {
+  title: L(UI.newsletterTitle, lang),
+  desc: L(UI.newsletterDesc, lang),
+  placeholder: L(UI.emailPlaceholder, lang),
+  subscribe: L(UI.subscribe, lang),
+  subscribed: L(UI.subscribed, lang),
+};
+---
+<BaseLayout title={`${profile.name} — ${L(UI.blog, lang)}`} description={tagline}>
+  <main class="page">
+    <section class="hero hero--statement">
+      <span class="kicker hero-kicker">
+        {L(profile.role, lang)} — {L(profile.location, lang)}
+      </span>
+      <h1 class="hero-statement">{tagline}</h1>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <span class="kicker">{L(UI.recent, lang)}</span>
+        <a class="text-link" href="/blog">
+          {L(UI.allPosts, lang)}
+          <svg class="arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                  stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </a>
+      </div>
+      <div class="post-list">
+        {recent.map((p, i) => <PostRow post={p} lang={lang} index={i} />)}
+      </div>
+    </section>
+
+    <Newsletter client:load strings={newsletterStrings} />
+    <Footer />
+  </main>
+</BaseLayout>

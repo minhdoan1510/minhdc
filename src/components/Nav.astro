@@ -1,0 +1,24 @@
+---
+import { L, UI, getLang } from "../lib/i18n";
+import { profile } from "../lib/db";
+import LangToggle from "./LangToggle.astro";
+import ThemeToggle from "./ThemeToggle.astro";
+
+const lang = getLang(Astro.cookies);
+const pathname = Astro.url.pathname;
+const onBlog = pathname === "/blog" || pathname.startsWith("/blog/");
+---
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="wordmark" href="/" aria-label={profile.name}>
+      <span class="wordmark-dot"></span>
+      {profile.name}
+    </a>
+    <nav class="nav-links">
+      <a class={"nav-link" + (onBlog ? " is-active" : "")} href="/blog">{L(UI.blog, lang)}</a>
+      <a class="nav-link nav-link--contact" href="/#contact">{L(UI.contact, lang)}</a>
+      <LangToggle />
+      <ThemeToggle />
+    </nav>
+  </div>
+</header>

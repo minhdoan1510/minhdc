@@ -1,0 +1,39 @@
+---
+// Light/dark toggle. Theme lives on <html data-theme> (set pre-paint in
+// BaseLayout) and is persisted to localStorage. No reload needed.
+---
+<button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme" title="Sáng / Tối">
+  <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+    <circle cx="12" cy="12" r="4"></circle>
+    <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"></path>
+  </svg>
+  <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"></path>
+  </svg>
+</button>
+
+<style>
+  /* show the icon for the theme you'd switch TO */
+  .theme-toggle .icon-moon { display: none; }
+  .theme-toggle .icon-sun { display: inline-flex; }
+  html[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
+  html[data-theme="dark"] .theme-toggle .icon-moon { display: inline-flex; }
+</style>
+
+<script is:inline>
+  (function () {
+    function bind() {
+      const btn = document.getElementById("theme-toggle");
+      if (!btn || btn.dataset.bound) return;
+      btn.dataset.bound = "1";
+      btn.addEventListener("click", function () {
+        const cur = document.documentElement.getAttribute("data-theme") || "light";
+        const next = cur === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        try { localStorage.setItem("blog.theme", next); } catch (e) {}
+      });
+    }
+    bind();
+    document.addEventListener("astro:after-swap", bind);
+  })();
+</script>

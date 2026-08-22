@@ -1,0 +1,36 @@
+---
+import { L, UI, getLang } from "../lib/i18n";
+import { profile } from "../lib/db";
+
+const lang = getLang(Astro.cookies);
+const year = new Date().getFullYear();
+---
+<footer class="footer" id="contact">
+  <div class="footer-grid">
+    <div class="footer-col">
+      <span class="kicker">{L(UI.contact, lang)}</span>
+      <a class="footer-email" href={"mailto:" + profile.email}>{profile.email}</a>
+      <p class="footer-loc">{L(profile.location, lang)}</p>
+    </div>
+    <div class="footer-col">
+      <span class="kicker">{L(UI.elsewhere, lang)}</span>
+      <ul class="footer-socials">
+        {profile.socials.map((s) => (
+          <li>
+            <a href={s.url} target="_blank" rel="noreferrer">
+              <span>{s.label}</span>
+              <span class="footer-handle">{s.handle}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+  <div class="footer-base">
+    <span>© {year} {profile.name}</span>
+    <span class="footer-right">
+      <span class="footer-built">{L(UI.thanksReading, lang)}</span>
+      <a class="footer-admin" href="/admin">{L(UI.admin, lang)}</a>
+    </span>
+  </div>
+</footer>

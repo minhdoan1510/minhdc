@@ -1,0 +1,30 @@
+---
+import { L, UI, fmtDate, tagLabel } from "../lib/i18n";
+import { tags } from "../lib/db";
+import type { Post } from "../lib/posts";
+import type { Lang } from "../lib/i18n";
+
+interface Props {
+  post: Post;
+  lang: Lang;
+  index?: number;
+}
+const { post, lang, index = 0 } = Astro.props;
+---
+<a class="post-row" href={`/blog/${post.slug}`} style={`--row-i:${index}`}>
+  <div class="post-row-meta">
+    <time datetime={post.date}>{fmtDate(post.date, lang)}</time>
+    <span class="post-row-tag">{tagLabel(tags, post.tag, lang)}</span>
+  </div>
+  <div class="post-row-main">
+    <h3 class="post-row-title">{L(post.title, lang)}</h3>
+    <p class="post-row-excerpt">{L(post.excerpt, lang)}</p>
+    <div class="post-row-read">
+      {post.readMins} {L(UI.minRead, lang)}
+      <svg class="arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+              stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    </div>
+  </div>
+</a>

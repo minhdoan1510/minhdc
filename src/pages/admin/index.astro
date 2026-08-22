@@ -1,0 +1,15 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import AdminApp from "../../components/admin/AdminApp.tsx";
+import type { ApiPost } from "../../components/admin/AdminApp.tsx";
+import { L } from "../../lib/i18n";
+import { tags } from "../../lib/db";
+import { loadPosts } from "../../lib/posts";
+
+// Access is enforced by middleware (redirects to /admin/login if not authed).
+const initialPosts = loadPosts() as ApiPost[];
+const tagOpts = tags.map((t) => ({ id: t.id, label: L(t, "vi") }));
+---
+<BaseLayout title="Quản trị — Minh Doan">
+  <AdminApp client:load initialPosts={initialPosts} tags={tagOpts} />
+</BaseLayout>
