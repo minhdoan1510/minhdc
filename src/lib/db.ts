@@ -1,84 +1,51 @@
-// db.ts — file-based SQLite connection, schema, and first-run seeding.
-import Database from "better-sqlite3";
-import fs from "node:fs";
-import path from "node:path";
+// db.ts — Cloudflare D1 connection and first-run seeding.
+// Schema lives in migrations/ (applied with `wrangler d1 migrations apply`).
+import { env } from "cloudflare:workers";
 import { posts as seedPosts, profile, tags } from "../content/seed";
-import { blocksToHtml } from "./html";
+import { seedBlocksToDoc } from "./blocks";
 
-const DB_PATH = process.env.DATABASE_PATH || "data/blog.db";
+let seeded = false;
 
-let db: Database.Database | null = null;
-
-// Lazily open (and on first call, create + seed) the database.
-export function getDb(): Database.Database {
-  if (db) return db;
-
-  const abs = path.resolve(process.cwd(), DB_PATH);
-  fs.mkdirSync(path.dirname(abs), { recursive: true });
-
-  db = new Database(abs);
-  db.pragma("journal_mode = WAL");
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS posts (
-      slug         TEXT PRIMARY KEY,
-      tag          TEXT NOT NULL,
-      date         TEXT NOT NULL,
-      read_mins    INTEGER NOT NULL DEFAULT 1,
-      featured     INTEGER NOT NULL DEFAULT 0,
-      title_vi     TEXT NOT NULL DEFAULT '',
-      title_en     TEXT NOT NULL DEFAULT '',
-      excerpt_vi   TEXT NOT NULL DEFAULT '',
-      excerpt_en   TEXT NOT NULL DEFAULT '',
-      body_html_vi TEXT NOT NULL DEFAULT '',
-      body_html_en TEXT NOT NULL DEFAULT ''
-    );
-
-    CREATE TABLE IF NOT EXISTS subscribers (
-      email      TEXT PRIMARY KEY,
-      created_at TEXT NOT NULL
-    );
-  `);
-
-  const count = db.prepare("SELECT COUNT(*) AS n FROM posts").get() as {
-    n: number;
-  };
-  if (count.n === 0) seedDatabase(db);
-
+// The D1 binding; on the first call per isolate, seed an empty posts table.
+export async function getDb(): Promise<D1Database> {
+  const db = env.DB;
+  if (seeded) return db;
+  const count = await db.prepare("SELECT COUNT(*) AS n FROM posts").first<number>("n");
+  if (!count) await seedDatabase(db);
+  seeded = true;
   return db;
 }
 
-// Insert the prototype seed content (migrating legacy block bodies → HTML).
+// Insert the prototype seed content.
 // Exported so the admin "reset" action can re-seed after wiping.
-export function seedDatabase(database: Database.Database) {
-  const insert = database.prepare(`
-    INSERT INTO posts
+export async function seedDatabase(db: D1Database) {
+  const insert = db.prepare(`
+    INSERT OR IGNORE INTO posts
       (slug, tag, date, read_mins, featured,
-       title_vi, title_en, excerpt_vi, excerpt_en, body_html_vi, body_html_en)
-    VALUES
-      (@slug, @tag, @date, @read_mins, @featured,
-       @title_vi, @title_en, @excerpt_vi, @excerpt_en, @body_html_vi, @body_html_en)
+       title_vi, title_en, excerpt_vi, excerpt_en, body_vi, body_en)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
-  const seedAll = database.transaction(() => {
-    for (const p of seedPosts) {
-      insert.run({
-        slug: p.slug,
-        tag: p.tag,
-        date: p.date,
-        read_mins: p.readMins,
-        featured: p.featured ? 1 : 0,
-        title_vi: p.title.vi || "",
-        title_en: p.title.en || "",
-        excerpt_vi: p.excerpt.vi || "",
-        excerpt_en: p.excerpt.en || "",
-        // migrate legacy block bodies → HTML, the stored source of truth
-        body_html_vi: blocksToHtml(p.body, "vi"),
-        body_html_en: blocksToHtml(p.body, "en"),
-      });
-    }
-  });
-  seedAll();
+  // batch() runs as a single transaction
+  await db.batch(
+    seedPosts.map((p) =>
+      insert.bind(
+        p.slug,
+        p.tag,
+        p.date,
+        p.readMins,
+        p.featured ? 1 : 0,
+        p.title.vi || "",
+        p.title.en || "",
+        p.excerpt.vi || "",
+        p.excerpt.en || "",
+        // lift the compact seed block array into Editor.js documents, which
+        // are the stored source of truth
+        JSON.stringify(seedBlocksToDoc(p.body, "vi")),
+        JSON.stringify(seedBlocksToDoc(p.body, "en"))
+      )
+    )
+  );
 }
 
 // Re-export the site profile and tags (static config, not stored in the DB).

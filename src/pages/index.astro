@@ -8,7 +8,7 @@ import { profile } from "../lib/db";
 import { loadPosts } from "../lib/posts";
 
 const lang = getLang(Astro.cookies);
-const recent = loadPosts().slice(0, 4);
+const recent = (await loadPosts()).slice(0, 4);
 const tagline = L(profile.bio, lang);
 
 const newsletterStrings = {

@@ -2,15 +2,15 @@
 import type { APIRoute } from "astro";
 import { removePost, getPost } from "../../../lib/posts";
 
-export const DELETE: APIRoute = ({ params }) => {
+export const DELETE: APIRoute = async ({ params }) => {
   const slug = params.slug!;
-  if (!getPost(slug)) {
+  if (!(await getPost(slug))) {
     return new Response(JSON.stringify({ error: "not found" }), {
       status: 404,
       headers: { "Content-Type": "application/json" },
     });
   }
-  removePost(slug);
+  await removePost(slug);
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
     headers: { "Content-Type": "application/json" },

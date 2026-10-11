@@ -1,6 +1,8 @@
 // PostEditor.tsx — the post edit form, ported from admin.jsx.
-import { useState } from "react";
-import RichEditor from "./RichEditor";
+import { useRef, useState } from "react";
+import RichEditor, { type RichEditorHandle } from "./RichEditor";
+import { emptyDoc } from "../../lib/blocks";
+import type { EditorDoc } from "../../lib/blocks";
 
 export interface EditorPost {
   slug: string;
@@ -9,7 +11,7 @@ export interface EditorPost {
   featured: boolean;
   title: { vi: string; en: string };
   excerpt: { vi: string; en: string };
-  bodyHtml: { vi: string; en: string };
+  body: { vi: EditorDoc; en: EditorDoc };
 }
 
 interface TagOpt {
@@ -25,7 +27,7 @@ export function blankPost(): EditorPost {
     featured: false,
     title: { vi: "", en: "" },
     excerpt: { vi: "", en: "" },
-    bodyHtml: { vi: "", en: "" },
+    body: { vi: emptyDoc(), en: emptyDoc() },
   };
 }
 
@@ -46,17 +48,33 @@ export default function PostEditor({
   const [elang, setElang] = useState<"vi" | "en">("vi");
   const isNew = !initial.slug;
 
+  const editorRef = useRef<RichEditorHandle>(null);
+
   const set = (patch: Partial<EditorPost>) => setD((p) => ({ ...p, ...patch }));
-  const setField = (field: "title" | "excerpt" | "bodyHtml", lang: "vi" | "en", v: string) =>
+  const setField = (field: "title" | "excerpt", lang: "vi" | "en", v: string) =>
     setD((p) => ({ ...p, [field]: { ...p[field], [lang]: v } }));
 
-  const save = () => {
-    const titleText = d.title.vi || d.title.en;
+  // The editor is uncontrolled: its document only reaches React state when we
+  // pull it. Both callers below must do so before the content can be lost.
+  const pull = async (): Promise<EditorDoc> =>
+    (await editorRef.current?.save()) ?? d.body[elang];
+
+  const switchLang = async (next: "vi" | "en") => {
+    if (next === elang) return;
+    const doc = await pull();
+    setD((p) => ({ ...p, body: { ...p.body, [elang]: doc } }));
+    setElang(next);
+  };
+
+  const save = async () => {
+    const doc = await pull();
+    const next: EditorPost = { ...d, body: { ...d.body, [elang]: doc } };
+    const titleText = next.title.vi || next.title.en;
     if (!titleText.trim()) {
       alert("Bài viết cần ít nhất một tiêu đề (VI hoặc EN).");
       return;
     }
-    onSave(d);
+    onSave(next);
   };
 
   return (
@@ -133,20 +151,16 @@ export default function PostEditor({
       <div className="content-bar">
         <span className="content-label">Nội dung bài viết</span>
         <div className="elang-tabs">
-          <button className={elang === "vi" ? "is-on" : ""} onClick={() => setElang("vi")}>
+          <button className={elang === "vi" ? "is-on" : ""} onClick={() => switchLang("vi")}>
             Tiếng Việt
           </button>
-          <button className={elang === "en" ? "is-on" : ""} onClick={() => setElang("en")}>
+          <button className={elang === "en" ? "is-on" : ""} onClick={() => switchLang("en")}>
             English
           </button>
         </div>
       </div>
 
-      <RichEditor
-        key={elang}
-        initialHtml={d.bodyHtml[elang]}
-        onChange={(html) => setField("bodyHtml", elang, html)}
-      />
+      <RichEditor key={elang} ref={editorRef} initialData={d.body[elang] ?? emptyDoc()} />
     </div>
   );
 }

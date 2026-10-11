@@ -16,14 +16,25 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
   }
 
-  // Mutating post/upload APIs require auth. Subscribe + logout are exempt.
-  const guardedApi =
-    pathname.startsWith("/api/posts") || pathname === "/api/upload";
-  if (guardedApi && MUTATING.has(method) && !isAuthed(context.cookies)) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
+  const unauthorized = () =>
+    new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
+
+  // Mutating post/upload APIs require auth. Subscribe + logout are exempt, and
+  // /api/file/[id] stays public so readers can download attachments.
+  const guardedApi =
+    pathname.startsWith("/api/posts") || pathname.startsWith("/api/upload");
+  if (guardedApi && MUTATING.has(method) && !isAuthed(context.cookies)) {
+    return unauthorized();
+  }
+
+  // The link preview endpoint makes the server fetch a client-supplied URL, so
+  // it is admin-only for every method — it is a GET, which the check above
+  // deliberately ignores. Left open it would be a public SSRF proxy.
+  if (pathname === "/api/link-preview" && !isAuthed(context.cookies)) {
+    return unauthorized();
   }
 
   return next();

@@ -5,17 +5,16 @@ dist/
 # dependencies
 node_modules/
 
-# database (file-based SQLite)
-data/*.db
-data/*.db-*
+# local D1/R2 state (wrangler / miniflare)
+.wrangler/
 
-# uploaded images
-public/uploads/*
-!public/uploads/.gitkeep
+# legacy SQLite data from the Node build
+data/
 
 # env / secrets
 .env
 .env.local
+.dev.vars
 
 # os / editor
 .DS_Store

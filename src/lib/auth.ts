@@ -1,12 +1,16 @@
 // auth.ts — minimal password gate for the admin area and mutating API routes.
 // The prototype had no auth; a real backend exposes write endpoints, so we add
-// a single-password session cookie. Set ADMIN_PASSWORD in .env.
+// a single-password session cookie. Set ADMIN_PASSWORD in .dev.vars locally
+// and as a Worker secret in production (`wrangler secret put ADMIN_PASSWORD`).
 import crypto from "node:crypto";
+import { env } from "cloudflare:workers";
 
 export const SESSION_COOKIE = "blog.admin";
 
+// Unset means locked: no password matches and no cookie is valid, so a deploy
+// that forgot the secret never ships with a guessable default.
 function password(): string {
-  return process.env.ADMIN_PASSWORD || "changeme";
+  return env.ADMIN_PASSWORD || "";
 }
 
 // Deterministic, non-secret-leaking token derived from the password. Rotating
@@ -19,6 +23,7 @@ function expectedToken(): string {
 }
 
 export function checkPassword(input: string): boolean {
+  if (!password()) return false;
   const a = Buffer.from(input || "");
   const b = Buffer.from(password());
   return a.length === b.length && crypto.timingSafeEqual(a, b);
@@ -32,7 +37,7 @@ export function isAuthed(cookies: {
   get(name: string): { value: string } | undefined;
 }): boolean {
   const v = cookies.get(SESSION_COOKIE)?.value;
-  if (!v) return false;
+  if (!v || !password()) return false;
   const a = Buffer.from(v);
   const b = Buffer.from(expectedToken());
   return a.length === b.length && crypto.timingSafeEqual(a, b);

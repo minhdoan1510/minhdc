@@ -7,7 +7,7 @@ import { tags } from "../../lib/db";
 import { loadPosts } from "../../lib/posts";
 
 // Access is enforced by middleware (redirects to /admin/login if not authed).
-const initialPosts = loadPosts() as ApiPost[];
+const initialPosts = (await loadPosts()) as ApiPost[];
 const tagOpts = tags.map((t) => ({ id: t.id, label: L(t, "vi") }));
 ---
 <BaseLayout title="Quản trị — Minh Doan">

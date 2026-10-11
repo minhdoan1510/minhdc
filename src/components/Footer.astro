@@ -30,7 +30,9 @@ const year = new Date().getFullYear();
     <span>© {year} {profile.name}</span>
     <span class="footer-right">
       <span class="footer-built">{L(UI.thanksReading, lang)}</span>
-      <a class="footer-admin" href="/admin">{L(UI.admin, lang)}</a>
+      <!-- Full page load: Editor.js injects its stylesheets once at module
+           eval, and a ClientRouter head swap would drop them on the way in. -->
+      <a class="footer-admin" href="/admin" data-astro-reload>{L(UI.admin, lang)}</a>
     </span>
   </div>
 </footer>

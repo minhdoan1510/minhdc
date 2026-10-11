@@ -1,5 +1,6 @@
-// html.ts — content helpers ported from the prototype (store.js, components.jsx,
-// admin.jsx). Pure functions, safe on both server and client.
+// html.ts — small content helpers shared by the server and the admin island.
+// Pure functions, safe on both sides. The Editor.js document model and its
+// renderer live in blocks.ts.
 
 export type Lang = "vi" | "en";
 
@@ -8,15 +9,7 @@ export interface Localized {
   en?: string;
 }
 
-export interface LegacyBlock {
-  type: "p" | "h2" | "quote" | "image";
-  vi?: string;
-  en?: string;
-  src?: string;
-  caption?: Localized;
-}
-
-// Escape user/content text for safe HTML interpolation.
+// Escape text for safe HTML interpolation in a text node.
 export function esc(s: string | undefined | null): string {
   return (s || "")
     .replace(/&/g, "&amp;")
@@ -24,36 +17,10 @@ export function esc(s: string | undefined | null): string {
     .replace(/>/g, "&gt;");
 }
 
-// Convert a legacy block-array body → an HTML string for one language.
-// Used to migrate the seed posts (data.js) into stored bodyHtml.
-export function blocksToHtml(body: LegacyBlock[] | undefined, lang: Lang): string {
-  if (!Array.isArray(body)) return "";
-  return body
-    .map((b) => {
-      if (b.type === "image") {
-        if (!b.src) return "";
-        const cap =
-          (b.caption && (b.caption[lang] || b.caption.vi || b.caption.en)) || "";
-        return `<figure contenteditable="false"><img src="${b.src}" alt="${esc(cap)}"></figure>`;
-      }
-      const txt = esc(b[lang] || b.vi || b.en || "");
-      if (!txt) return "";
-      if (b.type === "h2") return `<h2>${txt}</h2>`;
-      if (b.type === "quote") return `<blockquote>${txt}</blockquote>`;
-      return `<p>${txt}</p>`;
-    })
-    .join("");
-}
-
-// Body HTML for a post in a given language, regardless of storage format.
-export function postHtml(
-  post: { bodyHtml?: Localized; body?: LegacyBlock[] },
-  lang: Lang
-): string {
-  if (post.bodyHtml) {
-    return post.bodyHtml[lang] || post.bodyHtml.vi || post.bodyHtml.en || "";
-  }
-  return blocksToHtml(post.body, lang);
+// Same, plus the quotes — required for anything landing inside src="…" /
+// href="…", where esc() alone would let a value break out of the attribute.
+export function escAttr(s: string | undefined | null): string {
+  return esc(s).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 // Diacritic-safe slug (handles Vietnamese) — ported from store.js.
@@ -70,20 +37,6 @@ export function slugify(str: string): string {
   return base || "bai";
 }
 
-// Strip tags to plain text (for read-time estimation).
-function stripHtml(html: string): string {
-  return (html || "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&[a-z]+;/gi, " ");
-}
-
-// Estimate read time in minutes from a bilingual bodyHtml.
-export function estMins(bodyHtml: Localized): number {
-  const text = stripHtml(bodyHtml.vi || bodyHtml.en || "");
-  const words = text.trim().split(/\s+/).filter(Boolean).length;
-  return Math.max(1, Math.round(words / 170));
-}
-
 // Ensure a slug is unique within a set of existing slugs.
 export function uniqueSlug(
   base: string,
@@ -97,7 +50,8 @@ export function uniqueSlug(
   return s;
 }
 
-// Extract a YouTube video id from common URL shapes — ported from admin.jsx.
+// Extract a YouTube video id from common URL shapes. Still used server-side, as
+// the fallback when an embed block's iframe URL isn't one we recognise.
 export function ytId(url: string): string | null {
   if (!url) return null;
   const m = url.match(

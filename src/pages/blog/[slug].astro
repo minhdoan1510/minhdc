@@ -4,20 +4,21 @@ import Footer from "../../components/Footer.astro";
 import { L, UI, fmtDate, tagLabel, getLang } from "../../lib/i18n";
 import { tags, profile } from "../../lib/db";
 import { loadPosts, getPost } from "../../lib/posts";
-import { postHtml } from "../../lib/html";
+import { postBody } from "../../lib/blocks";
+import { renderDoc } from "../../lib/render";
 
 const lang = getLang(Astro.cookies);
 const { slug } = Astro.params;
 
-const all = loadPosts();
-const post = getPost(slug!);
+const all = await loadPosts();
+const post = await getPost(slug!);
 if (!post) {
   return Astro.redirect("/blog");
 }
 
 const idx = all.findIndex((p) => p.slug === post.slug);
 const next = all[(idx + 1) % all.length];
-const bodyHtml = postHtml(post, lang);
+const bodyHtml = renderDoc(postBody(post, lang));
 ---
 <BaseLayout title={`${L(post.title, lang)} — Minh Doan`} description={L(post.excerpt, lang)}>
   <main class="page article-page">

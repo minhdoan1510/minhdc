@@ -1,9 +1,8 @@
-// /api/upload — accept an image file, write it to public/uploads, return its URL.
+// /api/upload — accept an image file, store it in R2, return its URL
+// (served by src/pages/uploads/[name].ts).
 // Auth-gated by middleware. The client resizes/compresses before uploading.
 import type { APIRoute } from "astro";
-import fs from "node:fs/promises";
-import path from "node:path";
-import crypto from "node:crypto";
+import { env } from "cloudflare:workers";
 
 const EXT: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -31,11 +30,10 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  const dir = path.resolve(process.cwd(), "public/uploads");
-  await fs.mkdir(dir, { recursive: true });
   const name = `${crypto.randomUUID()}.${ext}`;
-  const buf = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(path.join(dir, name), buf);
+  await env.FILES.put(`uploads/${name}`, await file.arrayBuffer(), {
+    httpMetadata: { contentType: file.type },
+  });
 
   return new Response(JSON.stringify({ url: `/uploads/${name}` }), {
     status: 200,

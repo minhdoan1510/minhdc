@@ -13,7 +13,7 @@ export const POST: APIRoute = async ({ request }) => {
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return new Response(JSON.stringify({ error: "invalid email" }), { status: 400 });
   }
-  addSubscriber(email);
+  await addSubscriber(email);
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
     headers: { "Content-Type": "application/json" },

@@ -1,6 +1,7 @@
 // seed.ts — bilingual seed content, ported verbatim from the prototype's data.js.
 // Used to seed the SQLite database on first run.
-import type { LegacyBlock, Localized } from "../lib/html";
+import type { SeedBlock } from "../lib/blocks";
+import type { Localized } from "../lib/html";
 import type { Tag } from "../lib/i18n";
 
 export interface Social {
@@ -26,7 +27,7 @@ export interface SeedPost {
   featured: boolean;
   title: Localized;
   excerpt: Localized;
-  body: LegacyBlock[];
+  body: SeedBlock[];
 }
 
 export const profile: Profile = {
@@ -54,9 +55,9 @@ export const tags: Tag[] = [
   { id: "notes", vi: "Ghi chú", en: "Notes" },
 ];
 
-const P = (vi: string, en: string): LegacyBlock => ({ type: "p", vi, en });
-const H = (vi: string, en: string): LegacyBlock => ({ type: "h2", vi, en });
-const Q = (vi: string, en: string): LegacyBlock => ({ type: "quote", vi, en });
+const P = (vi: string, en: string): SeedBlock => ({ type: "p", vi, en });
+const H = (vi: string, en: string): SeedBlock => ({ type: "h2", vi, en });
+const Q = (vi: string, en: string): SeedBlock => ({ type: "quote", vi, en });
 
 export const posts: SeedPost[] = [
   {

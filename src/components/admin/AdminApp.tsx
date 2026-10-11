@@ -2,6 +2,7 @@
 // persisted server-side via the /api/posts endpoints. Ported from admin.jsx.
 import { useState } from "react";
 import { fmtDate } from "../../lib/i18n";
+import type { EditorDoc } from "../../lib/blocks";
 import PostEditor, { blankPost, type EditorPost } from "./PostEditor";
 
 export interface ApiPost {
@@ -12,7 +13,7 @@ export interface ApiPost {
   featured: boolean;
   title: { vi: string; en: string };
   excerpt: { vi: string; en: string };
-  bodyHtml: { vi: string; en: string };
+  body: { vi: EditorDoc; en: EditorDoc };
 }
 
 interface TagOpt {
@@ -53,11 +54,11 @@ export default function AdminApp({
           featured: p.featured,
           title: p.title,
           excerpt: p.excerpt,
-          bodyHtml: p.bodyHtml,
+          body: p.body,
         }),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
         alert("Không lưu được bài viết. " + (err?.error || ""));
         return;
       }
@@ -115,7 +116,7 @@ export default function AdminApp({
           <h1 className="page-title">Bài viết</h1>
         </div>
         <div className="admin-head-actions">
-          <a className="btn-ghost" href="/blog">← Xem blog</a>
+          <a className="btn-ghost" href="/blog" data-astro-reload>← Xem blog</a>
           <button className="btn-solid" onClick={() => setEditing(blankPost())}>+ Bài mới</button>
         </div>
       </div>
